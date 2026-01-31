@@ -135,5 +135,3 @@ License
 Contact
 ---
 yguo32022@gmail.com
-
-Translated with DeepL.com (free version)
