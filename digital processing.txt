@@ -1,0 +1,88 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.signal import butter, filtfilt, find_peaks
+from scipy.signal import detrend
+
+# 示例：从 CSV 读取（一列为信号）
+# df = pd.read_csv("scg_signal.csv")
+# signal = df["signal"].values
+
+signal = np.array(signal)  # 如果你已有 numpy array
+
+fs = 500          # sampling frequency (Hz)
+dt = 1 / fs
+t = np.arange(len(signal)) * dt
+
+
+def butter_bandpass(lowcut, highcut, fs, order=4):
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = butter(order, [low, high], btype='band')
+    return b, a
+
+lowcut = 5
+highcut = 40
+
+b, a = butter_bandpass(lowcut, highcut, fs)
+filtered_signal = filtfilt(b, a, signal)
+
+plt.figure(figsize=(10, 4))
+plt.plot(t, signal, label="Original Signal", alpha=0.5)
+plt.plot(t, filtered_signal, label="Filtered SCG", linewidth=1.5)
+plt.xlabel("Time (s)")
+plt.ylabel("Amplitude")
+plt.legend()
+plt.title("Original and Filtered SCG Signal")
+plt.tight_layout()
+plt.show()
+
+
+# 最小峰间距（例如 0.15s）
+min_distance = int(0.15 * fs)
+
+peaks, properties = find_peaks(
+    filtered_signal,
+    distance=min_distance,
+    prominence=0.5  # 可调
+)
+
+peak_times = t[peaks]
+peak_values = filtered_signal[peaks]
+
+
+plt.figure(figsize=(10, 4))
+plt.plot(t, filtered_signal, label="Filtered SCG")
+plt.plot(peak_times, peak_values, "ro", label="Detected Peaks")
+plt.xlabel("Time (s)")
+plt.ylabel("Amplitude")
+plt.legend()
+plt.title("Filtered SCG Signal with Detected Peaks")
+plt.tight_layout()
+plt.show()
+
+
+baseline_corrected = detrend(filtered_signal)
+plt.figure(figsize=(10, 4))
+plt.plot(t, baseline_corrected, label="Baseline Corrected Signal")
+plt.xlabel("Time (s)")
+plt.ylabel("Amplitude")
+plt.legend()
+plt.title("After Baseline Drift Correction")
+plt.tight_layout()
+plt.show()
+
+
+result_df = pd.DataFrame({
+    "peak time points (s)": np.round(peak_times_corr, 3),
+    "peak SCG values": np.round(peak_values_corr, 3)
+})
+
+print(result_df)
+
+
+result_df.to_csv("scg_peak_results.csv", index=False)
+# 或
+result_df.to_excel("scg_peak_results.xlsx", index=False)
+
